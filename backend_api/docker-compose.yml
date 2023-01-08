@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  mysql-db:
+    container_name: mysql_db
+    image: arm64v8/mysql:oracle
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: api_db
+      MYSQL_USER: django_user
+      MYSQL_PASSWORD: Dev@r0ot
+      MYSQL_ROOT_PASSWORD: Dev@r0ot
+      MYSQL_TCP_PORT: 3308
+    ports:
+      - "3308:3308"
+
+  backend:
+    container_name: backend_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - .:/app
+    depends_on:
+      - mysql-db
+    expose:
+      - 8000
+    ports:
+      - "8000:8000"
+    command: bash -c "/usr/wait-for-it.sh --timeout=0 mysql-db:3308 && python manage.py runserver 0.0.0.0:8000"
+
+volumes:
+  mysql_data:
