@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from .authentication import generate_access_token, JWTAuthentication
 from .models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, PermissionSerializer
 
 
 @api_view(["POST"])
@@ -29,10 +29,10 @@ def login(request):
     password = request.data.get("password")
 
     # Getting user
-    user = User.objects.filter(email=email).get()
-    if user is None:
+    if User.objects.filter(email=email).count() == 0:
         raise exceptions.AuthenticationFailed("Cannot find user for given email address!")
 
+    user = User.objects.filter(email=email).get()
     if not user.check_password(password):
         raise exceptions.AuthenticationFailed("Incorrect password!")
 
@@ -71,3 +71,12 @@ class AuthenticatedUser(APIView):
         serializer = UserSerializer(request.user)
         response = serializer.data
         return Response({"data": response})
+
+
+class Permissions(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = PermissionSerializer(request.user)
+        return Response({"data": serializer.data})
