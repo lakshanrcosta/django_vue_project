@@ -9,13 +9,13 @@ from .models import User
 from .serializers import UserSerializer
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def register(request):
     data = request.data
     # @Todo Validate request data
 
-    if data['password'] != data['password_confirm']:
-        raise exceptions.APIException('Passwords did no match!')
+    if data["password"] != data["password_confirm"]:
+        raise exceptions.APIException("Passwords did no match!")
 
     serializer = UserSerializer(data=data)
     serializer.is_valid(raise_exception=True)
@@ -23,10 +23,10 @@ def register(request):
     return Response(serializer.data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def login(request):
-    email = request.data.get('email')
-    password = request.data.get('password')
+    email = request.data.get("email")
+    password = request.data.get("password")
 
     # Getting user
     user = User.objects.filter(email=email).get()
@@ -34,23 +34,33 @@ def login(request):
         raise exceptions.AuthenticationFailed("Cannot find user for given email address!")
 
     if not user.check_password(password):
-        raise exceptions.AuthenticationFailed('Incorrect password!')
+        raise exceptions.AuthenticationFailed("Incorrect password!")
 
     response = Response()
     token = generate_access_token(user)
-    response.set_cookie(key='jwt', value=token, httponly=True)
+    response.set_cookie(key="jwt", value=token, httponly=True)
     response.data = {
-        'jwt': token
+        "jwt": token
     }
 
     return response
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def users(request):
     registered_users = User.objects.all()
     serializer = UserSerializer(registered_users, many=True)
     return Response(serializer.data)
+
+
+@api_view(["POST"])
+def logout(_):
+    response = Response()
+    response.delete_cookie(key="jwt")
+    response.data = {
+        "message": "Success"
+    }
+    return response
 
 
 class AuthenticatedUser(APIView):
@@ -60,4 +70,4 @@ class AuthenticatedUser(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         response = serializer.data
-        return Response({'data': response})
+        return Response({"data": response})

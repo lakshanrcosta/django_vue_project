@@ -8,28 +8,27 @@ from rest_framework.authentication import BaseAuthentication
 
 def generate_access_token(user):
     payload = {
-        'user_id': user.id,
-        'exp': datetime.utcnow() + timedelta(minutes=60),
-        'iat': datetime.utcnow()
+        "user_id": user.id,
+        "exp": datetime.utcnow() + timedelta(minutes=60),
+        "iat": datetime.utcnow()
     }
 
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 class JWTAuthentication(BaseAuthentication):
     def authenticate(self, request):
-        token = request.COOKIES.get('jwt')
+        token = request.COOKIES.get("jwt")
         if not token:
             return None
 
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user = get_user_model().objects.filter(id=payload["user_id"]).first()
+
+            if user is None:
+                raise exceptions.AuthenticationFailed("User not found!")
+            return user, token
+
         except jwt.ExpiredSignatureError:
             exceptions.AuthenticationFailed("Unauthorized!")
-
-        user = get_user_model().objects.filter(id=payload['user_id']).first()
-
-        if user is None:
-            raise exceptions.AuthenticationFailed("User not found!")
-
-        return user, None
